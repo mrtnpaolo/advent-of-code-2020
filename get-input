@@ -31,7 +31,7 @@ fi
 
 url="https://adventofcode.com/${year}/day/${day}/input"
 
-file="inputs/input-${day}.txt"
+file="inputs/input-$(printf '%02d' "${day}").txt"
 
 if [ "$force" != "YES" ] && [ -f "${file}" ]
 then
