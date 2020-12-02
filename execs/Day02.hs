@@ -18,18 +18,16 @@ main =
     replace  x  =  x
 
 part1, part2 :: [(Int,Int,Char,String)] -> Int
-part1 xs
-  = length [ undefined
-           | (lo,hi,c,pwd) <- xs
-           , let pop = length (filter (c==) pwd)
-           , pop >= lo
-           , pop <= hi
-           ]
-part2 xs
-  = length [ undefined
-           | (lo,hi,c,pwd) <- xs
-           , lo <= length pwd && hi <= length pwd
-           , let p1 = pwd !! (lo-1)
-           , let p2 = pwd !! (hi-1)
-           , (p1 == c && p2 /= c) || (p1 /= c && p2 == c)
-           ]
+
+part1 = count valid
+  where
+    valid (lo,hi,c,pwd)
+      = let pop = count (c==) pwd
+        in lo <= pop && pop <= hi
+
+part2 = count valid
+  where
+    valid (lo,hi,c,pwd)
+      = let p1 = (pwd !! (lo-1) == c)
+            p2 = (pwd !! (hi-1) == c)
+        in p1 /= p2

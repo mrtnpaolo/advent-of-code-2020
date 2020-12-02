@@ -5,6 +5,7 @@ module Advent
 
 import System.Environment (getArgs)
 import Text.Printf (printf)
+import Data.List (foldl')
 
 getRawInput :: Int {- ^ day number -} -> IO String
 getRawInput n =
@@ -20,3 +21,6 @@ getRawTest n m =
      case args of
        []    -> readFile (printf "inputs/input-%02d-test-%02d.txt" n m)
        "-":_ -> getContents
+
+count :: Foldable f => (a -> Bool) -> f a -> Int
+count p = foldl' (\n x -> if p x then n+1 else n) 0

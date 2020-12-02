@@ -8,14 +8,14 @@ license-file:       LICENSE
 copyright:          2020 Paolo Martini <mrtnpaolo@protonmail.com>
 
 library
-    exposed-modules:  Advent,
-                      Advent.Coord,
-                      Advent.Queue,
-                      Advent.Search
-    build-depends:    base ^>=4.14.1.0,
-                      containers ^>=0.6.2.1
-    hs-source-dirs:   common
-    default-language: Haskell2010
+    exposed-modules:    Advent,
+                        Advent.Coord,
+                        Advent.Queue,
+                        Advent.Search
+    build-depends:      base ^>=4.14.1.0,
+                        containers ^>=0.6.2.1
+    hs-source-dirs:     common
+    default-language:   Haskell2010
 
 executable Day01
     main-is:            Day01.hs
