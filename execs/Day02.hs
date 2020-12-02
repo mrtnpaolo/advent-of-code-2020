@@ -28,6 +28,6 @@ part1 = count valid
 part2 = count valid
   where
     valid (lo,hi,c,pwd)
-      = let p1 = (pwd !! (lo-1) == c)
-            p2 = (pwd !! (hi-1) == c)
+      = let p1 = pwd !! (lo-1) == c
+            p2 = pwd !! (hi-1) == c
         in p1 /= p2
