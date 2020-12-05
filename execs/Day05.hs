@@ -20,10 +20,8 @@ part1, part2 :: [Seat] -> Int
 part1 = maximum . map seat
 
 seat :: Seat -> Int
-seat (splitAt 7 -> (r,c)) = calc (readBin r) (readBin c)
+seat = readBin
   where
-    calc r c = r*8 + c
-
     readBin x | [(n,_)] <- readInt 2 (`elem` "FBLR") digit x = n
 
     digit 'F' = 0; digit 'L' = 0
