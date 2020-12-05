@@ -22,5 +22,11 @@ getRawTest n m =
        []    -> readFile (printf "inputs/input-%02d-test-%02d.txt" n m)
        "-":_ -> getContents
 
+getParsed :: (String -> a) -> Int -> IO a
+getParsed f n = f <$> getRawInput n
+
+getParsedLines :: (String -> a) -> Int -> IO [a]
+getParsedLines f n = map f . lines <$> getRawInput n
+
 count :: Foldable f => (a -> Bool) -> f a -> Int
 count p = foldl' (\n x -> if p x then n+1 else n) 0
