@@ -5,3 +5,7 @@ trim_trailing_whitespace = false
 [*.{cabal,hs}]
 indent_style = space
 indent_size = 2
+
+[get-input]
+indent_style = tab
+indent_size = 8

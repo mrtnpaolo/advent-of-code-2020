@@ -33,15 +33,23 @@ url="https://adventofcode.com/${year}/day/${day}/input"
 
 file="inputs/input-$(printf '%02d' "${day}").txt"
 
+function dump_file () {
+	cat "${file}"
+	read lines words chars ignore <<<$(cat "${file}" | wc)
+	read size ignore <<<$(du -h "${file}")
+	printf "[lines=%d words=%d chars=%d size=%s file=%s]\n" \
+		"${lines}" "${words}" "${chars}" "${size}" "${file}"
+}
+
 if [ "$force" != "YES" ] && [ -f "${file}" ]
 then
 	ctime="$(stat -f "%SB" "${file}")"
 	>&2 echo "get-input: cached at ${ctime}"
-	cat "${file}"
+	dump_file
 	exit 0
 fi
 
 >&2 echo "downloading input for ${year} day ${day}"
 curl -s -b "session=$(cat .session)" "${url}" --create-dirs -o "${file}"
 
-cat "${file}"
+dump_file
