@@ -1,66 +1,47 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Main
   ( main
   ) where
 
 import Advent
-import Data.Maybe
-import Data.List.Split
-import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Debug.Trace
+import Data.List (unfoldr,partition)
+import Data.List.Split (splitOn)
 
 main :: IO ()
 main =
-  do i <- M.fromList <$> getParsedLines parseLine 7
-     print (part1 i)
-     print (part2 i)
+  do rs <- getParsedLines parseLine 7
+     print (part1 rs)
 
-i = M.fromList . map parseLine . lines <$> getRawInput 7
-t = M.fromList . map parseLine . lines <$> getRawTest 7 1
-t2 = M.fromList . map parseLine . lines <$> getRawTest 7 2
-
-parseLine = f . init . words
-
-f (c1:c2:"bags":"contain":rest) = (unwords [c1,c2],deps)
+parseLine = match . words . init
   where
-    deps = concatMap (g . words) . splitOn ", " . unwords $ rest
-    g ((read @Int -> n):c1:c2:_) = [(unwords [c1,c2],n)]
-    g ["no","other"] = []
+    match (c1:c2:"bags":"contain":(concatMap (each . words) . splitOn ", " . unwords -> bags)) =
+      (unwords [c1,c2],bags)
+    each ["no","other","bags"]      = []
+    each ((read @Int -> n):c1:c2:_) = [(n,unwords [c1,c2])]
 
-part1 = count hasShinyGold . M.toList . dup . iterate walk
-
-hasShinyGold (_,xs) = "shiny gold" `elem` map fst xs
-
-type Rules = Map String [(String,Int)]
-
-walk :: Rules -> Rules
-walk rs = M.map (concatMap expand) rs
+-- open each bag until either shiny gold or no bags are inside
+part1 rs = sum $ takeWhile (>0) $ unfoldr open bags
   where
-    expand p@("shiny gold",_) = [p]
-    expand (c,n) =
-      [ (c',n*m)
-      | xs <- maybeToList (rs M.!? c)
-      , (c',m) <- xs
-      ]
+    rs' = M.fromList [ (c,cs) | (c,map snd -> cs) <- rs ]
+    bags = [ cs | (_,map snd -> cs) <- rs ]
+    open xs =
+      case partition ("shiny gold" `elem`) xs of
+        (length -> n,rest) -> Just (n,map (concatMap (rs' M.!)) rest)
 
-dup (x:y:z:_) | y == z = x
-dup (_:xs) = dup xs
-
-part2 rs = go 1 "shiny gold"
+{-
+-- invert the map
+-- then start from "shiny gold" keeping track of all the colors seen
+part1 rs = go S.empty (S.singleton "shiny gold")
   where
-    go 0 _ = 0
-    go 1 "shiny gold" = sum $ traceShowId [ go n c | (c,n) <- rs M.! "shiny gold" ]
-    go want color = want + (sum $ traceShowId [ want * go n c | (c,n) <- bags ])
+    inverted = M.fromListWith (++) [ y | (c,map snd -> cs) <- rs
+                                       , y <- (\x -> (x,[c])) <$> cs ]
+    go seen cs
+      | S.null cs = S.size seen
+      | otherwise = go seen' cs'
       where
-        bags =
-          case rs M.! color of
-            [] -> [(undefined,0)]
-            xs -> xs
-
--- 1 sg
--- (1 + 1*do) + (2 + 2*vp)
--- (1 + 1*(3 + 3*fb + 4 + 4*db)) + (2 + 2*(5 + 5*fb + 6 + 6*db))
--- (1 + 1*(3 + 3*0 + 4 + 4*0)) + (2 + 2(5 + 5*0 + 6 + 6*0))
--- (1 + 3 + 4)
-
+        cs' = S.fromList . concat . M.elems . M.restrictKeys inverted $ cs
+        seen' = seen `S.union` cs'
+-}
