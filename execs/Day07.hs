@@ -8,13 +8,17 @@ import Data.Maybe
 import Data.List.Split
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Debug.Trace
 
 main :: IO ()
 main =
   do i <- M.fromList <$> getParsedLines parseLine 7
      print (part1 i)
+     print (part2 i)
 
+i = M.fromList . map parseLine . lines <$> getRawInput 7
 t = M.fromList . map parseLine . lines <$> getRawTest 7 1
+t2 = M.fromList . map parseLine . lines <$> getRawTest 7 2
 
 parseLine = f . init . words
 
@@ -42,3 +46,21 @@ walk rs = M.map (concatMap expand) rs
 
 dup (x:y:z:_) | y == z = x
 dup (_:xs) = dup xs
+
+part2 rs = go 1 "shiny gold"
+  where
+    go 0 _ = 0
+    go 1 "shiny gold" = sum $ traceShowId [ go n c | (c,n) <- rs M.! "shiny gold" ]
+    go want color = want + (sum $ traceShowId [ want * go n c | (c,n) <- bags ])
+      where
+        bags =
+          case rs M.! color of
+            [] -> [(undefined,0)]
+            xs -> xs
+
+-- 1 sg
+-- (1 + 1*do) + (2 + 2*vp)
+-- (1 + 1*(3 + 3*fb + 4 + 4*db)) + (2 + 2*(5 + 5*fb + 6 + 6*db))
+-- (1 + 1*(3 + 3*0 + 4 + 4*0)) + (2 + 2(5 + 5*0 + 6 + 6*0))
+-- (1 + 3 + 4)
+
