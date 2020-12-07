@@ -15,6 +15,7 @@ main :: IO ()
 main =
   do rs <- getParsedLines parseLine 7
      print (part1 rs)
+     print (part2 rs)
 
 parseLine :: String -> Rule
 parseLine = match . words . init
@@ -32,3 +33,10 @@ part1 rules = sum $ takeWhile (>0) $ unfoldr (Just . open) (M.elems contain)
     open = bimap length (map openAll) . partition ("shiny gold" `elem`)
     openAll = concatMap (contain M.!)
     contain = M.fromList [ (c,map snd cs) | (c,cs) <- rules ]
+
+-- open and count the bags recursively then remove the shiny gold one
+part2 :: [Rule] -> Int
+part2 (M.fromList -> rules) = pred (go 1 "shiny gold")
+  where
+    go _    []    = 0
+    go want color = want + sum [ want * go n c | (n,c) <- rules M.! color ]
