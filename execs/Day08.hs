@@ -6,8 +6,8 @@ module Main
 import Advent
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
-import Data.Set (Set)
-import qualified Data.Set as S
+import Data.IntSet (IntSet)
+import qualified Data.IntSet as IS
 import Data.List (findIndices)
 
 main :: IO ()
@@ -28,7 +28,7 @@ part1 = finalAcc . run (-1) . load
 
 data VM = VM
   { _mem  :: IntMap Ins
-  , _seen :: Set Int
+  , _seen :: IntSet
   , _acc  :: Int
   , _ip   :: Int
   } deriving (Show)
@@ -36,7 +36,7 @@ data VM = VM
 load :: [Ins] -> VM
 load xs =
   VM { _mem  = IM.fromList (zip [0..] xs)
-     , _seen = S.empty
+     , _seen = IS.empty
      , _acc  = 0
      , _ip   = 0
      }
@@ -51,7 +51,7 @@ run :: Int {- ^ index of instruction to flip -} -> VM -> Effect
 run ix vm@VM{..}
 
   -- infinite loop
-  | S.member _ip _seen = Infinite _acc
+  | IS.member _ip _seen = Infinite _acc
 
   -- correct termination
   | _ip == IM.size _mem = Terminate _acc
@@ -72,7 +72,7 @@ run ix vm@VM{..}
         (op,arg) | _ip == ix -> (patch op,arg)
                  | otherwise -> (      op,arg)
 
-      look   vm@VM{..} = vm { _seen = S.insert _ip _seen }
+      look   vm@VM{..} = vm { _seen = IS.insert _ip _seen }
       ip off vm@VM{..} = vm { _ip   = _ip + off }
       acc n  vm@VM{..} = vm { _acc  = _acc + n }
 
