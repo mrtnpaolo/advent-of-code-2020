@@ -1,42 +1,41 @@
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Main
   ( main
   ) where
 
 import Advent
-import qualified Data.Map.Strict as M
-import Data.List (unfoldr,partition)
+import Data.List (partition)
 import Data.List.Split (splitOn)
-import Data.Bifunctor (bimap)
-
-type Rule = (String,[(Int,String)])
+import qualified Data.Map.Strict as M
 
 main :: IO ()
 main =
-  do rs <- getParsedLines parseLine 7
-     print (part1 rs)
-     print (part2 rs)
+  do i <- getParsedLines parse 7
+     print (part1 i)
+     print (part2 i)
 
-parseLine :: String -> Rule
-parseLine = match . words . init
+parse line = (bag,bags)
   where
-    match (c1:c2:"bags":"contain":inside) = (unwords [c1,c2],bags)
+    [bag,inside] = splitOn " bags contain " line
+    bags = concatMap (readBag . words) (splitOn ", " (init inside))
+    readBag ["no","other","bags"] = []
+    readBag [read @Int -> n,c1,c2,_] = [(n,unwords [c1,c2])]
+    readBag xs = error (show xs)
+
+part1 rules = go 0 (M.elems rs)
+  where
+    rs = M.fromList [ (c,map snd cs) | (c,cs) <- rules ]
+    openAll = concatMap (rs M.!)
+
+    go n bags
+      | 0 == golds = n
+      | otherwise  = go (n+golds) others
       where
-        bags = concatMap (each . words) . splitOn ", " . unwords $ inside
-    each ["no","other","bags"]      = []
-    each ((read @Int -> n):c1:c2:_) = [(n,unwords [c1,c2])]
+        (length -> golds,map openAll -> others) = partition ("shiny gold" `elem`) bags
 
--- open each bag until either shiny gold or no bags are inside
-part1 :: [Rule] -> Int
-part1 rules = sum $ takeWhile (>0) $ unfoldr (Just . open) (M.elems contain)
+part2 rules = pred (go 1 "shiny gold")
   where
-    open = bimap length (map openAll) . partition ("shiny gold" `elem`)
-    openAll = concatMap (contain M.!)
-    contain = M.fromList [ (c,map snd cs) | (c,cs) <- rules ]
+    rs = M.fromList rules
 
--- open and count the bags recursively then remove the shiny gold one
-part2 :: [Rule] -> Int
-part2 (M.fromList -> rules) = pred (go 1 "shiny gold")
-  where
-    go _    []    = 0
-    go want color = want + sum [ want * go n c | (n,c) <- rules M.! color ]
+    go 0    _     = 0
+    go want color = want + want * sum [ go n c | (n,c) <- rs M.! color ]
