@@ -1,51 +1,23 @@
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Main
   ( main
   ) where
 
 import Advent
-import Advent.Search (dfsOn)
-import Data.List (sort,find)
+import Data.List (sort)
 import Data.List.Split (split,keepDelimsR,keepDelimsL,whenElt)
-import qualified Data.IntSet as IS
 
 main :: IO ()
 main =
-  do i <- getParsedLines parse 10
-     --i <- getParsedTestLines parse 10 1
+  do i <- getParsedLines read 10
      print (part1 i)
      print (part2 i)
 
-parse = read @Int
-
-data S =
-  S { from  :: Int
-    , avail :: IS.IntSet
-    , d1, d2, d3 :: Int
-    } deriving (Show)
-
-repr S{..} = IS.toAscList avail
-
-next S{..} =
-  [ S { from  = next
-      , avail = IS.delete next avail
-      , d1 = if dj == 1 then d1 + 1 else d1
-      , d2 = if dj == 2 then d2 + 1 else d2
-      , d3 = if dj == 3 then d3 + 1 else d3
-      }
-  | dj <- [1,2,3], let next = from+dj, next `IS.member` avail ]
-
 part1, part2 :: [Int] -> Int
 
-part1 ns = d1 s * d3 s
+part1 i = count (3==) diffs * count (1==) diffs
   where
-    extra = 3 + maximum ns
-    ns' = IS.insert extra (IS.fromList ns)
-    start = S { from = 0
-              , avail = ns'
-              , d1 = 0, d2 = 0, d3 = 0
-              }
-    Just s = find (IS.null . avail) $ dfsOn repr next start
+    ns = 0 : sort i ++ [3 + maximum i]
+    diffs = zipWith (-) (tail ns) ns
 
 part2 (sort -> i) = product [ ways (length g) | g <- grouping ns ]
   where
