@@ -4,21 +4,19 @@ module Main
   ) where
 
 import Advent
-import Data.List (tails,find)
-import Data.Set (Set)
+import Data.List (tails)
 import qualified Data.Set as S
 
 main :: IO ()
 main =
-  do i <- getParsedLines parse 9
-     --i <- getParsedTestLines parse 9 1
+  do i <- getParsedLines read 9
+     --i <- getParsedTestLines read 9 1
      --let needle = part1 5 i
      let needle = part1 25 i
      print needle
      print (part2 needle i)
 
-parse = read @Integer
-
+part1, part2 :: Int -> [Int] -> Int
 
 part1 size ns = head ys
   where
@@ -27,9 +25,8 @@ part1 size ns = head ys
            , let sums = S.fromList [ a+b | a:bs <- tails pre, b <- bs ]
            , x `S.notMember` sums ]
 
-part2 needle ns = (cm,cM,cm+cM)
+part2 needle ns = head [ lo+hi | (lo,hi,tot) <- all', tot == needle ]
   where
-    sums k = [ (minimum ms, maximum ms, sum ms) | ms <- map (take k) (tails ns) ]
-    all' = concatMap sums [2..]
-    Just (cm,cM,_) = find (\(_,_,s) -> s == needle) all'
-
+    sums k = [ (minimum ms, maximum ms, sum ms)
+             | ms <- map (take k) (tails ns) ]
+    all' = concatMap (takeWhile (\(_,_,s) -> s <= needle) . sums) [2..]
