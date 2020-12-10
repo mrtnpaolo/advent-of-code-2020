@@ -15,6 +15,12 @@ getRawInput n =
        "-":_ -> getContents
        fn:_  -> readFile fn
 
+getParsed :: (String -> a) -> Int -> IO a
+getParsed f n = f <$> getRawInput n
+
+getParsedLines :: (String -> a) -> Int -> IO [a]
+getParsedLines f n = map f . lines <$> getRawInput n
+
 getRawTest :: Int {- ^ day number -} -> Int {- ^ test number -} -> IO String
 getRawTest n m =
   do args <- getArgs
@@ -22,11 +28,11 @@ getRawTest n m =
        []    -> readFile (printf "inputs/input-%02d-test-%02d.txt" n m)
        "-":_ -> getContents
 
-getParsed :: (String -> a) -> Int -> IO a
-getParsed f n = f <$> getRawInput n
+getParsedTest :: (String -> a) -> Int -> Int -> IO a
+getParsedTest f n i = f <$> getRawTest n i
 
-getParsedLines :: (String -> a) -> Int -> IO [a]
-getParsedLines f n = map f . lines <$> getRawInput n
+getParsedTestLines :: (String -> a) -> Int -> Int -> IO [a]
+getParsedTestLines f n i = map f . lines <$> getRawTest n i
 
 count :: Foldable f => (a -> Bool) -> f a -> Int
 count p = foldl' (\n x -> if p x then n+1 else n) 0

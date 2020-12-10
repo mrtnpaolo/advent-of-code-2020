@@ -3,6 +3,21 @@ module Advent.Search where
 import qualified Advent.Queue as Queue
 import qualified Data.Set as Set
 
+{-# INLINE dfs #-}
+dfs :: Ord a => (a -> [a]) -> a -> [a]
+dfs = dfsOn id
+
+dfsOn :: Ord r => (a -> r) -> (a -> [a]) -> a -> [a]
+dfsOn rep next start = loop Set.empty [start]
+  where
+    loop _ [] = []
+    loop seen (x:xs)
+      | Set.member r seen =     loop seen xs
+      | otherwise         = x : loop seen1 (next x ++ xs)
+      where
+        r     = rep x
+        seen1 = Set.insert r seen
+
 {-# INLINE bfs #-}
 bfs :: Ord a => (a -> [a]) -> a -> [a]
 bfs = bfsOn id
