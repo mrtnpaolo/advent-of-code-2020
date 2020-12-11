@@ -16,7 +16,7 @@ neighbors :: Coord -> [Coord]
 neighbors c = c `seq` [above c, left c, right c, below c,
                        above (left c), above (right c),
                        below (left c), below (right c)]
- 
+
 origin :: Coord
 origin = C 0 0
 

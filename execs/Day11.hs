@@ -5,7 +5,7 @@ module Main
 
 import Advent
 import Advent.Coord
-import Data.Maybe (maybeToList,listToMaybe,catMaybes,isJust)
+import Data.Maybe (maybeToList,catMaybes,isJust)
 import qualified Data.Map.Strict as M
 
 main :: IO ()
@@ -50,14 +50,13 @@ part2 :: Grid -> Int
 part2 = M.size . M.filter (== Occupied) . dup . iterate tick2
 
 far :: Grid -> Coord -> [Seat]
-far g (C y x) = concatMap look' dirs
+far g (C y x) = concatMap look dirs
   where
     ray (C dy dx) = [ g M.!? C (y+i) (x+j)
                     | i <- tail [0,dy..]
                     | j <- tail [0,dx..] ]
-    look = filter (/= Floor) . catMaybes . takeWhile isJust . ray
-    look' = maybeToList . listToMaybe . look
     dirs = [C (-1) 0,C (-1) 1,C 0 1,C 1 1,C 1 0,C 1 (-1),C 0 (-1),C (-1) (-1)]
+    look = take 1 . filter (/= Floor) . catMaybes . takeWhile isJust . ray
 
 tick2 :: Grid -> Grid
 tick2 g = M.mapWithKey f g
