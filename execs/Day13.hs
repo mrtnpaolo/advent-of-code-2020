@@ -19,30 +19,23 @@ parse raw = (read @Int earliest,buses)
     [earliest,rest] = lines raw
     buses = [ (read @Int bus,delay)
             | bus <- splitOn "," rest, bus /= "x"
-            | delay <- [0..]
-            ]
+            | delay <- [0..] ]
 
-part1 (earliest,map fst -> ids) = head $
-  [ bus*i
-  | i <- [0..]
-  , let j = earliest + i
-  , bus <- ids
-  , let r = j `mod` bus
-  , r == 0
-  ]
+part1 (earliest,buses) = head $
+  [ bus*i | i <- [0..], (bus,_) <- buses, 0 == (earliest + i) `mod` bus ]
 
 part2 (_,needle) = crt residues moduli
   where
     moduli   = [ m   | (m,_) <- needle ]
     residues = [ m-r | (m,r) <- needle ]
 
--- t      `mod` bus1 == 0
--- t+arr1 `mod` bus2 == 0
--- t+arr3 `mod` bus3 == 0
+-- t    `mod` b1 == 0
+-- t+a2 `mod` b2 == 0
+-- t+a3 `mod` b3 == 0
 -- ..
--- t+arrN `mod` busN == 0
+-- t+aN `mod` bN == 0
 -- all at the same time
--- all the busN are prime
+-- all the bs are prime
 -- t mod b1 = 0
 -- t mod b2 = -a2 = b2-a2
 -- ..
