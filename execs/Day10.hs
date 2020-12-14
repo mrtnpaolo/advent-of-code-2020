@@ -2,13 +2,15 @@ module Main
   ( main
   ) where
 
-import Advent
+import Advent (getInputLines,count)
+
 import Data.List (sort)
+
 import Data.List.Split (split,keepDelimsR,keepDelimsL,whenElt)
 
 main :: IO ()
 main =
-  do i <- getParsedLines read 10
+  do i <- getInputLines read 10
      print (part1 i)
      print (part2 i)
 
@@ -19,9 +21,9 @@ part1 i = count (3==) diffs * count (1==) diffs
     ns = 0 : sort i ++ [3 + maximum i]
     diffs = zipWith (-) (tail ns) ns
 
-part2 (sort -> i) = product [ ways (length g) | g <- grouping ns ]
+part2 i = product [ ways (length g) | g <- grouping ns ]
   where
-    ns = 0 : i ++ [3 + last i]
+    ns = 0 : sort i ++ [3 + maximum i]
 
     grouping xs =
       split (keepDelimsR . keepDelimsL . whenElt $ three) (zip xs (tail xs))
