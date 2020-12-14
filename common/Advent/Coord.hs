@@ -1,7 +1,9 @@
 module Advent.Coord where
 
+import Data.Ix
+
 data Coord = C !Int !Int
-  deriving (Read, Show, Ord, Eq)
+  deriving (Read, Show, Ord, Eq, Ix)
 
 cardinal :: Coord -> [Coord]
 cardinal c = c `seq` [above c, right c, below c, left c]
