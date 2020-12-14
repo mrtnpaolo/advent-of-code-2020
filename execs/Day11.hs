@@ -1,26 +1,31 @@
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Main
   ( main
   ) where
 
-import Advent
-import Advent.Coord
+import Advent (getInput,count,dup)
+import Advent.Coord (Coord(..),neighbors)
+
 import Data.Maybe (maybeToList,catMaybes,isJust)
+
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 
 main :: IO ()
 main =
-  do grid <- getParsed parse 11
+  do grid <- getInput parse 11
      print (part1 grid)
      print (part2 grid)
 
 data Seat = Floor | Empty | Occupied
   deriving (Show,Eq)
 
+type Grid = Map Coord Seat
+
 parse :: String -> Grid
-parse i = M.fromList $ concat $
-  [ [ (C y x,the thing) | (x,thing) <- zip [0..] xs ]
-  | (y,xs) <- zip [0..] (lines i) ]
+parse (lines -> rows) =
+  M.fromList [ (C y x,the thing)
+             | (y,cols)  <- zip [0..] rows
+             , (x,thing) <- zip [0..] cols ]
   where
     the '.' = Floor
     the 'L' = Empty
@@ -29,8 +34,6 @@ parse i = M.fromList $ concat $
 
 part1 :: Grid -> Int
 part1 = M.size . M.filter (== Occupied) . dup . iterate tick
-
-type Grid = M.Map Coord Seat
 
 adj :: Grid -> Coord -> [Seat]
 adj g c = [ seat | c' <- neighbors c, seat <- maybeToList (g M.!? c') ]
@@ -42,20 +45,14 @@ tick g = M.mapWithKey f g
     f c Occupied | count (== Occupied) (adj g c) >= 4 = Empty
     f _ seat = seat
 
-dup :: Eq a => [a] -> a
-dup (x:y:_) | x == y = x
-dup (_:xs)           = dup xs
-
 part2 :: Grid -> Int
 part2 = M.size . M.filter (== Occupied) . dup . iterate tick2
 
 far :: Grid -> Coord -> [Seat]
 far g (C y x) = concatMap look dirs
   where
-    ray (C dy dx) = [ g M.!? C (y+i) (x+j)
-                    | i <- tail [0,dy..]
-                    | j <- tail [0,dx..] ]
-    dirs = [C (-1) 0,C (-1) 1,C 0 1,C 1 1,C 1 0,C 1 (-1),C 0 (-1),C (-1) (-1)]
+    ray (dy,dx) = tail [ g M.!? C (y+i) (x+j) | i <- [0,dy..] | j <- [0,dx..] ]
+    dirs = [(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1)]
     look = take 1 . filter (/= Floor) . catMaybes . takeWhile isJust . ray
 
 tick2 :: Grid -> Grid
