@@ -20,8 +20,7 @@ library
 executable Day01
     main-is:            Day01.hs
     build-depends:      base,
-                        advent-of-code2020,
-                        containers
+                        advent-of-code2020
     hs-source-dirs:     execs
     default-language:   Haskell2010
     default-extensions: TypeApplications
@@ -29,8 +28,7 @@ executable Day01
 executable Day02
     main-is:            Day02.hs
     build-depends:      base,
-                        advent-of-code2020,
-                        containers
+                        advent-of-code2020
     hs-source-dirs:     execs
     default-language:   Haskell2010
     default-extensions: ViewPatterns
@@ -48,7 +46,6 @@ executable Day04
     main-is:            Day04.hs
     build-depends:      base,
                         advent-of-code2020,
-                        containers,
                         split
     hs-source-dirs:     execs
     default-language:   Haskell2010
@@ -57,17 +54,15 @@ executable Day04
 executable Day05
     main-is:            Day05.hs
     build-depends:      base,
-                        advent-of-code2020,
-                        containers
+                        advent-of-code2020
     hs-source-dirs:     execs
     default-language:   Haskell2010
 
 executable Day06
     main-is:            Day06.hs
-    build-depends:      base ^>=4.14.1.0,
+    build-depends:      base,
                         advent-of-code2020,
-                        containers ^>=0.6.2.1,
-                        split ^>=0.2.3.4
+                        split
     hs-source-dirs:     execs
     default-language:   Haskell2010
 
