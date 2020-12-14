@@ -1,27 +1,34 @@
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Main
   ( main
   ) where
 
-import Advent
+import Advent (getInputLines)
+
+import Data.List (findIndices)
+
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
+
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IS
-import Data.List (findIndices)
 
 main :: IO ()
 main =
-  do i <- getParsedLines parse 8
-     -- i <- map parse . lines <$> getRawTest 8 1
+  do i <- getInputLines parse 8
      print (part1 i)
      print `mapM_` part2 i
 
-type Ins = (String,Int)
+data Op = ACC | JMP | NOP deriving (Eq)
+
+opcode "acc" = ACC
+opcode "jmp" = JMP
+opcode "nop" = NOP
+
+type Ins = (Op,Int)
 
 parse :: String -> Ins
-parse (words -> [op,'+':(read -> arg)]) = (op, arg)
-parse (words -> [op,'-':(read -> arg)]) = (op,-arg)
+parse (words -> [opcode -> op,'+':(read -> arg)]) = (op, arg)
+parse (words -> [opcode -> op,'-':(read -> arg)]) = (op,-arg)
 
 part1 :: [Ins] -> Int
 part1 = finalAcc . run (-1) . load
@@ -31,7 +38,7 @@ data VM = VM
   , _seen :: IntSet
   , _acc  :: Int
   , _ip   :: Int
-  } deriving (Show)
+  }
 
 load :: [Ins] -> VM
 load xs =
@@ -59,24 +66,23 @@ run ix vm@VM{..}
   -- instruction processing
   | otherwise = run ix $ case instr of
 
-      ("jmp",off) -> ip off .         look $ vm
-      ("nop",_  ) -> ip 1   .         look $ vm
-      ("acc",n  ) -> ip 1   . acc n . look $ vm
+      (JMP,off) -> ip off .         look $ vm
+      (NOP,_  ) -> ip 1   .         look $ vm
+      (ACC,n  ) -> ip 1   . acc n . look $ vm
 
     where
-      patch "jmp" = "nop"
-      patch "nop" = "jmp"
-      patch   x   =   x
+      patch JMP = NOP
+      patch NOP = JMP
 
       instr = case _mem IM.! _ip of
         (op,arg) | _ip == ix -> (patch op,arg)
-                 | otherwise -> (      op,arg)
+                 | otherwise ->       (op,arg)
 
-      look   vm@VM{..} = vm { _seen = IS.insert _ip _seen }
-      ip off vm@VM{..} = vm { _ip   = _ip + off }
-      acc n  vm@VM{..} = vm { _acc  = _acc + n }
+      look     vm@VM{..} = vm { _seen = IS.insert _ip _seen }
+      ip   off vm@VM{..} = vm { _ip   = _ip + off           }
+      acc  n   vm@VM{..} = vm { _acc  = _acc + n            }
 
 part2 :: [Ins] -> [Int]
-part2 mem = [ n | Terminate n <- [ run i (load mem) | i <- indices ] ]
+part2 mem = [ n | Terminate n <- [ run i (load mem) | i <- ixs ] ]
   where
-    indices = findIndices ((`elem` ["jmp","nop"]) . fst) mem
+    ixs = findIndices (`elem` [JMP,NOP]) [ op | (op,_) <- mem ]
