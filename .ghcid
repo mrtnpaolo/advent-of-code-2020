@@ -1,1 +1,1 @@
---restart=advent-of-code2020.cabal --command="cabal v2-repl --repl-options=-fno-break-on-exception --repl-options=-fno-break-on-error --repl-options=-v1 --repl-options=-ferror-spans --repl-options=-j --repl-options=-Wall --repl-options=-Wno-name-shadowing"
+--restart=advent-of-code2020.cabal --command="cabal v2-repl --repl-options=-fno-break-on-exception --repl-options=-fno-break-on-error --repl-options=-v1 --repl-options=-ferror-spans --repl-options=-j --repl-options=-Wall --repl-options=-Wno-name-shadowing --repl-options=-Wno-missing-signatures"
