@@ -14,18 +14,20 @@ main =
      print (part1 i)
      print (part2 i)
 
+parse :: String -> (Int,[(Int,Int)])
 parse (lines -> [earliest,schedule]) = (read earliest,buses)
   where
-    buses = [ (read bus,delay) | bus <- splitOn "," schedule, bus /= "x"
-                               | delay <- [0..] ]
+    buses = [ (read bus,delay)
+            | (bus,delay) <- zip (splitOn "," schedule) [0..]
+            , bus /= "x" ]
 
 part1 (earliest,buses) = head $
-  [ bus*i | i <- [0..], (bus,_) <- buses, 0 == (earliest + i) `mod` bus ]
+  [ bus * i | i <- [0..], (bus,_) <- buses, 0 == (earliest + i) `mod` bus ]
 
-part2 (_,needle) = crt residues moduli
+part2 (_,buses) = crt residues moduli
   where
-    moduli   = [ m   | (m,_) <- needle ]
-    residues = [ m-r | (m,r) <- needle ]
+    moduli   = [ bus       | (bus,_    ) <- buses ]
+    residues = [ bus-delay | (bus,delay) <- buses ]
 
 -- t    `mod` b1 == 0
 -- t+a2 `mod` b2 == 0

@@ -126,7 +126,7 @@ executable Day13
                         split
     hs-source-dirs:     execs
     default-language:   Haskell2010
-    default-extensions: ViewPatterns, ParallelListComp
+    default-extensions: ViewPatterns
 
 executable Day14
     main-is:            Day14.hs
