@@ -1,16 +1,15 @@
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Main
   ( main
   ) where
 
-import Advent
+import Advent (getInputLines)
 import Data.List (partition)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
 
 main :: IO ()
 main =
-  do i <- getParsedLines parse 7
+  do i <- getInputLines parse 7
      print (part1 i)
      print (part2 i)
 
@@ -31,7 +30,8 @@ part1 rules = go 0 (M.elems rs)
       | 0 == golds = n
       | otherwise  = go (n+golds) others
       where
-        (length -> golds,map openAll -> others) = partition ("shiny gold" `elem`) bags
+        (length -> golds,map openAll -> others) =
+          partition ("shiny gold" `elem`) bags
 
 part2 rules = pred (go 1 "shiny gold")
   where
