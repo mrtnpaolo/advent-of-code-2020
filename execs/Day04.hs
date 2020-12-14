@@ -2,7 +2,7 @@ module Main
   ( main
   ) where
 
-import Advent
+import Advent (getInput,count,ri)
 import Data.Char (isDigit)
 import Data.List.Split (splitOn)
 
@@ -10,27 +10,25 @@ type Passport = [(String,String)]
 
 main :: IO ()
 main =
-  do ps <- parse <$> getRawInput 4
-     print (part1 ps)
-     print (part2 ps)
+  do i <- getInput parse 4
+     print (part1 i)
+     print (part2 i)
+
+parse :: String -> [Passport]
+parse = map passport . splitOn "\n\n"
   where
-    parse :: String -> [Passport]
-    parse = map parsePassport . splitOn "\n\n"
-
-    parsePassport :: String -> Passport
-    parsePassport = map parseKey . words
-
-    parseKey :: String -> (String,String)
-    parseKey (a:b:c:':':v) = (a:b:c:[],v)
-    parseKey _             = undefined
+    passport            = map field . words
+    field (a:b:c:':':v) = (a:b:c:[],v)
+    field xs            = error (show xs)
 
 part1, part2 :: [Passport] -> Int
+
 part1 = count valid
 
 valid :: Passport -> Bool
-valid p = all (`elem` (map fst p)) keys
+valid (map fst -> keys) = all (`elem` keys) required
   where
-    keys = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
+    required = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
 
 part2 = count (all (uncurry strict)) . filter valid
 
@@ -45,18 +43,12 @@ strict "hgt" (reverse -> xs)
   | ('n':'i':(ri . reverse -> n)) <- xs =  59 <= n && n <=  76
   | otherwise = False
 
-strict "hcl" ('#':xs) =
-  length xs == 6 && all (`elem` "0123456789abcdef") xs
+strict "hcl" ('#':xs) = length xs == 6 && all (`elem` "0123456789abcdef") xs
 
-strict "ecl" xs =
-  xs `elem` ["amb","blu","brn","gry","grn","hzl","oth"]
+strict "ecl" xs = xs `elem` ["amb","blu","brn","gry","grn","hzl","oth"]
 
-strict "pid" xs =
-  length xs == 9 && all isDigit xs
+strict "pid" xs = length xs == 9 && all isDigit xs
 
-strict "cid" _ = True
+strict "cid" _  = True
 
-strict _ _ = False
-
-ri :: String -> Int
-ri = read
+strict _     _  = False

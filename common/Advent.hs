@@ -31,5 +31,8 @@ getInputLines parse = getInput (map parse . lines)
 getTestLines :: (String -> a) -> Int -> Int -> IO [a]
 getTestLines parse = getTest (map parse . lines)
 
+ri :: String -> Int
+ri = read
+
 count :: Foldable f => (a -> Bool) -> f a -> Int
 count p = foldl' (\n x -> if p x then n+1 else n) 0
