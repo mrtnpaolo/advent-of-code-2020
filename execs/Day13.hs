@@ -1,25 +1,23 @@
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
 module Main
   ( main
   ) where
 
-import Advent
+import Advent (getInput)
+
 import Data.List.Split (splitOn)
+
 import Control.Monad (zipWithM)
 
 main :: IO ()
 main =
-  do i <- getParsed parse 13
-     --i <- getParsedTest parse 13 1
+  do i <- getInput parse 13
      print (part1 i)
      print (part2 i)
 
-parse raw = (read @Int earliest,buses)
+parse (lines -> [earliest,schedule]) = (read earliest,buses)
   where
-    [earliest,rest] = lines raw
-    buses = [ (read @Int bus,delay)
-            | bus <- splitOn "," rest, bus /= "x"
-            | delay <- [0..] ]
+    buses = [ (read bus,delay) | bus <- splitOn "," schedule, bus /= "x"
+                               | delay <- [0..] ]
 
 part1 (earliest,buses) = head $
   [ bus*i | i <- [0..], (bus,_) <- buses, 0 == (earliest + i) `mod` bus ]
