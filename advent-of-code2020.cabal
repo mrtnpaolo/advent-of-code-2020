@@ -113,13 +113,11 @@ executable Day11
 
 executable Day12
     main-is:            Day12.hs
-    build-depends:      base ^>=4.14.1.0,
-                        advent-of-code2020,
-                        containers ^>=0.6.2.1,
-                        split ^>=0.2.3.4
+    build-depends:      base,
+                        advent-of-code2020
     hs-source-dirs:     execs
     default-language:   Haskell2010
-    default-extensions: ViewPatterns, TypeApplications, RecordWildCards, ParallelListComp
+    default-extensions: ViewPatterns
 
 executable Day13
     main-is:            Day13.hs

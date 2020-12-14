@@ -2,13 +2,13 @@ module Main
   ( main
   ) where
 
-import Advent
-import Data.Complex
+import Advent (getInputLines)
+import Data.Complex (Complex(..))
 import Data.List (foldl')
 
 main :: IO ()
 main =
-  do i <- getParsedLines parse 12
+  do i <- getInputLines parse 12
      print (part1 i)
      print (part2 i)
 
