@@ -1,14 +1,18 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Main
   ( main
   ) where
 
-import Advent          (getInput,select)
-import Advent.Search   (dfsOn)
+import Advent          (getInput)
 
-import Data.Ix         (range,inRange)
-import Data.List       (transpose,findIndices,isPrefixOf)
+import Data.Ix         (range)
+import Data.Ord        (comparing)
+import Data.List       (transpose,sortBy,isPrefixOf)
 
 import Data.List.Split (splitOn)
+
+import qualified Data.Set as S     (fromList,size,delete)
+import qualified Data.IntSet as IS (fromList,member,notMember)
 
 main :: IO ()
 main =
@@ -16,60 +20,36 @@ main =
      print (part1 i)
      print (part2 i)
 
-parse raw = (rules,mine,nearby)
+parse (splitOn "\n\n" -> [a,b,c]) = (rules,mine,nearby)
   where
-    [a,b,c] = splitOn "\n\n" raw
-    rules = map rule . lines $ a
-    rule r = (name,(x,y),(w,z))
+    rules = map rule (lines a)
+
+    rule line = (name,numbers)
       where
-        [name,rest] = splitOn ": " r
-        [x,y,w,z] = map (read @Int) . words . map rep $ rest
-        rep x | x `elem` "-or" = ' ' | otherwise = x
-    mine = map (read @Int) $ splitOn "," (lines b !! 1)
+        [name,rest]     = splitOn ": " line
+        numbers         = IS.fromList (range (lo,hi) ++ range (lo',hi'))
+        [lo,hi,lo',hi'] = map (read @Int) (words (map clean rest))
+        clean c | c `elem` "-or" = ' '
+                | otherwise      =  c
+
+    mine   = map (read @Int) . splitOn "," . (!! 1) . lines $ b
+
     nearby = map (map (read @Int) . splitOn ",") . tail . lines $ c
 
-part1 (rules,_,tickets) = sum $ concat [ invalid t | t <- tickets ]
+invalid rules n = and [ n `IS.notMember` s | (_,s) <- rules ]
+
+part1 (rules,_,nearby) = sum [ n | ticket <- nearby, n <- ticket, invalid rules n ]
+
+part2 (rules,mine,nearby) = product [ value | (value,name) <- sieve ordered
+                                            , "departure " `isPrefixOf` name ]
   where
-    allranges = concat [ concat [range r1,range r2] | (_,r1,r2) <- rules ]
-    invalid xs = [ x | x <- xs, x `notElem` allranges ]
+    valid = mine : filter (not . any (invalid rules)) nearby
 
-type Rule = (String,(Int,Int),(Int,Int))
+    candidates = zip mine [ S.fromList [ n | (n,s) <- rules, all (`IS.member` s) ns ]
+                          | ns <- transpose valid ]
 
-data SS =
-  SS { _avail :: [Rule]
-     , _found :: [Rule]
-     , _preds :: [Rule -> Bool]
-     }
+    ordered = sortBy (comparing (S.size . snd)) candidates
 
-part2 (rules,mine,othertickets) = product [ v | v <- map (mine !!) ixs ]
-  where
-    ixs = findIndices departures (reverse (_found solution))
-
-    departures (name,_,_) = "departure " `isPrefixOf` name
-
-    [solution] = filter (null . _avail) (dfsOn repr next start)
-
-    nearbys    = filter (not . invalid) othertickets
-    invalid xs = or [ x `notElem` allranges | x <- xs ]
-    allranges  = concat [ concat [range r1,range r2] | (_,r1,r2) <- rules ]
-
-    checks = [ \(_,r1,r2) -> and [ inRange r1 n || inRange r2 n | n <- ns ]
-             | ns <- transpose nearbys ]
-
-    start =
-      SS { _avail = rules
-         , _found = []
-         , _preds = checks }
-
-    next SS{..}
-      | null _avail = []
-      | otherwise =
-        [ SS { _avail = remaining
-             , _found = rule : _found
-             , _preds = ps }
-        | (rule,remaining) <- select _avail
-        , let (p:ps) = _preds
-        , p rule
-        ]
-
-    repr SS{..} = _avail
+    sieve [] = []
+    sieve ((val,[name]):rest) = -- inputs are s.t. this is always the case
+      (val,name) : sieve [ (v,S.delete name names) | (v,names) <- rest ]

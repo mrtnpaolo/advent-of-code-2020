@@ -153,9 +153,8 @@ executable Day16
     main-is:            Day16.hs
     build-depends:      base,
                         advent-of-code2020,
-                        array,
                         containers,
                         split
     hs-source-dirs:     execs
     default-language:   Haskell2010
-    default-extensions: ScopedTypeVariables, ViewPatterns, TypeApplications, BangPatterns, RecordWildCards
+    default-extensions: ViewPatterns, TypeApplications, OverloadedLists
