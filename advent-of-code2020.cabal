@@ -147,7 +147,7 @@ executable Day15
                         split
     hs-source-dirs:     execs
     default-language:   Haskell2010
-    default-extensions: ScopedTypeVariables, ViewPatterns, TypeApplications, BangPatterns
+    default-extensions: ImportQualifiedPost, NumericUnderscores, TypeApplications
 
 executable Day16
     main-is:            Day16.hs
