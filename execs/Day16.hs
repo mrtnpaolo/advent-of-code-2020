@@ -1,24 +1,14 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Main
   ( main
   ) where
 
-import Advent
-import Advent.Search
+import Advent          (getInput,select)
+import Advent.Search   (dfsOn)
 
-import Data.Maybe
-import Data.List
+import Data.Ix         (range,inRange)
+import Data.List       (transpose,findIndices,isPrefixOf)
 
-import Data.List.Split
-
-import qualified Data.Set as S
-import qualified Data.IntSet as IS
-import qualified Data.Map.Strict as M
-import qualified Data.IntMap.Strict as IM
-
-import Debug.Trace
-
-import Data.Ix
+import Data.List.Split (splitOn)
 
 main :: IO ()
 main =
@@ -46,78 +36,40 @@ part1 (rules,_,tickets) = sum $ concat [ invalid t | t <- tickets ]
 type Rule = (String,(Int,Int),(Int,Int))
 
 data SS =
-  SS { _freerules :: [Rule]
-     , _foundrules :: [Rule]
-     , _ns :: [[Int]]
+  SS { _avail :: [Rule]
+     , _found :: [Rule]
+     , _preds :: [Rule -> Bool]
      }
-  deriving (Show)
 
 part2 (rules,mine,othertickets) = product [ v | v <- map (mine !!) ixs ]
   where
-    ixs = findIndices (("departure "==) . take (length "departure ") . rname) (reverse $ _foundrules sol)
+    ixs = findIndices departures (reverse (_found solution))
 
-    rname (rn,_,_) = rn
+    departures (name,_,_) = "departure " `isPrefixOf` name
 
-    --sol = SS {_freerules = [], _foundrules = [("departure location",(34,724),(735,974)),("zone",(35,766),(784,952)),("wagon",(37,797),(810,973)),("departure station",(40,521),(534,950)),("arrival station",(36,536),(552,972)),("route",(34,309),(318,965)),("departure track",(37,258),(268,964)),("duration",(50,920),(929,950)),("departure date",(32,650),(665,964)),("departure platform",(40,329),(353,973)),("train",(47,746),(754,960)),("arrival location",(42,431),(447,952)),("type",(32,406),(423,963)),("departure time",(39,373),(398,950)),("arrival track",(49,836),(852,952)),("price",(35,853),(870,973)),("row",(42,267),(292,962)),("arrival platform",(45,666),(678,952)),("seat",(46,632),(642,954)),("class",(35,600),(623,953))], _ns = []}
+    [solution] = filter (null . _avail) (dfsOn repr next start)
 
-    [sol] = filter ((goal==) . length . _foundrules) search
-    goal = length mine
-
-    nearbys = filter (not . invalid) othertickets
-    allranges = concat [ concat [range r1,range r2] | (_,r1,r2) <- rules ]
+    nearbys    = filter (not . invalid) othertickets
     invalid xs = or [ x `notElem` allranges | x <- xs ]
+    allranges  = concat [ concat [range r1,range r2] | (_,r1,r2) <- rules ]
 
-    checks = transpose nearbys
-
-    acceptable (_,r1,r2) nums = and [ inRange r1 n || inRange r2 n | n <- nums ]
+    checks = [ \(_,r1,r2) -> and [ inRange r1 n || inRange r2 n | n <- ns ]
+             | ns <- transpose nearbys ]
 
     start =
-      SS { _freerules = rules
-         , _foundrules = []
-         , _ns = checks
-         }
+      SS { _avail = rules
+         , _found = []
+         , _preds = checks }
 
     next SS{..}
-      | null _freerules = []
+      | null _avail = []
       | otherwise =
-        [ SS { _freerules = _freerules \\ [rule]
-             , _foundrules = rule : _foundrules
-             , _ns = rest
-             }
-        | rule <- _freerules
-        , let (ns:rest) = _ns
-        , acceptable rule ns
+        [ SS { _avail = remaining
+             , _found = rule : _found
+             , _preds = ps }
+        | (rule,remaining) <- select _avail
+        , let (p:ps) = _preds
+        , p rule
         ]
 
-    repr SS{..} = _freerules
-
-    search = dfsOn repr next start
-
-{-
-part2 (rules,mine,othertickets) = fields
-  where
-    allranges = concat [ concat [range r1,range r2] | (_,r1,r2) <- rules ]
-    invalid xs = or [ x `notElem` allranges | x <- xs ]
-
-    nearbys = filter (not . invalid) othertickets
-
-    complete fs = length fs == length mine
-
-    fields = filter complete $ bfsOn repr next start
-
-    start = []
-
-    next fields =
-      [ fields ++ [rname]
-      | (rname,r1,r2) <- freerules
-      , all (\field -> inRange r1 field || inRange r2 field)
-            [ t !! length fields | t <- nearbys ]
-      ]
-      where
-        freerules = [ r | r@(rname,_,_) <- rules, rname `notElem` fields ]
-
-    repr = id
--}
-
--- dfsOn :: Ord r => (a -> r) -> (a -> [a]) -> a -> [a]
--- dfsOn rep next start = loop Set.empty [start]
+    repr SS{..} = _avail

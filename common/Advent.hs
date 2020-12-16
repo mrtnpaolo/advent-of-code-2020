@@ -40,3 +40,7 @@ count p = foldl' (\n x -> if p x then n+1 else n) 0
 dup :: Eq a => [a] -> a
 dup (x:y:_) | x == y = x
 dup (_:xs)           = dup xs
+
+select :: [a] -> [(a,[a])]
+select [] = []
+select (x:xs) = (x,xs) : [ (y,x:ys) | (y,ys) <- select xs ]
