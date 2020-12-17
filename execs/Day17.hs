@@ -39,9 +39,12 @@ parse (lines -> rows) =
   [ (y,x) | (y,cols) <- zip [0..] rows
           , (x,'#' ) <- zip [0..] cols ]
 
-part1 = S.size . (!! 6) . iterate tick . S.fromList . map (\(y,x) -> C3 0 y x)
+part1 = solve . map (\(y,x) -> C3 0 y x)
 
-part2 = S.size . (!! 6) . iterate tick . S.fromList . map (\(y,x) -> C4 0 0 y x)
+part2 = solve . map (\(y,x) -> C4 0 0 y x)
+
+solve :: Space c => [c] -> Int
+solve = S.size . (!! 6) . iterate tick . S.fromList
 
 tick :: Space c => Set c -> Set c
 tick w = S.filter (live w) . hull $ w
