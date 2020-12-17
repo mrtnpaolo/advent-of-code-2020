@@ -1,71 +1,57 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Main
   ( main
   ) where
 
-import Advent
---import Advent.Coord
-import Advent.Search
+import Advent  (getInput)
 
-import Data.Ix
-import Data.List
-import Data.Maybe
-
-import Data.List.Split
-
+import Data.Set (Set)
 import Data.Set qualified as S
-import Data.Set qualified as IS
-import Data.Map.Strict qualified as M
-import Data.IntMap.Strict qualified as IM
 
---import Data.Array qualified as A
---import Data.Array.Unboxed qualified as A
---import Data.Array.IArray qualified as A
---import Data.Array.MArray qualified as A
+data C3 = C3 !Int !Int !Int
+  deriving (Read, Show, Ord, Eq)
 
-data Coord = C !Int !Int !Int !Int
-  deriving (Read, Show, Ord, Eq, Ix)
+data C4 = C4 !Int !Int !Int !Int
+  deriving (Read, Show, Ord, Eq)
 
-neighbors :: Coord -> [Coord]
-neighbors c@(C w z y x) =
-  c `seq` [ C (w+dw) (z+dz) (y+dy) (x+dx)
-          | dx <- [-1,0,1], dy <- [-1,0,1], dz <- [-1,0,1], dw <- [-1,0,1]
-          , abs dx + abs dy + abs dz + abs dw > 0 ]
+class Ord c => Space c where
+  neighbors :: c -> [c]
 
-origin :: Coord
-origin = C 0 0 0 0
+instance Space C3 where
+  neighbors c@(C3 z y x) =
+    c `seq` [ C3 (z+dz) (y+dy) (x+dx)
+            | dx <- [-1,0,1], dy <- [-1,0,1], dz <- [-1,0,1]
+            , abs dx + abs dy + abs dz > 0 ]
 
-
-data Cube = On | Off deriving (Show,Eq)
+instance Space C4 where
+  neighbors c@(C4 w z y x) =
+    c `seq` [ C4 (w+dw) (z+dz) (y+dy) (x+dx)
+            | dx <- [-1,0,1], dy <- [-1,0,1], dz <- [-1,0,1], dw <- [-1,0,1]
+            , abs dx + abs dy + abs dz + abs dw > 0 ]
 
 main :: IO ()
 main =
   do i <- getInput parse 17
      print (part1 i)
+     print (part2 i)
 
-parse :: String -> M.Map Coord Cube
-parse raw = M.fromList $
-  [ (C 0 0 y x,b) | (y,row) <- zip [0..] (lines raw)
-                , (x,a) <- zip [0..] row
-                , let b = case a of '.' -> Off; '#' -> On ]
+parse :: String -> [(Int,Int)]
+parse (lines -> rows) =
+  [ (y,x) | (y,cols) <- zip [0..] rows
+          , (x,'#' ) <- zip [0..] cols ]
 
-part1 = M.size . (!! 6) . iterate tick
+part1 = S.size . (!! 6) . iterate tick . S.fromList . map (\(y,x) -> C3 0 y x)
 
---tick m = M.mapWithKey (f m) m
-tick :: M.Map Coord Cube -> M.Map Coord Cube
-tick m = M.filter (On ==) . M.fromList $
-  [ (c,f m' c x) | c <- cs, x <- case (m M.!? c) of Nothing -> [Off]; Just s -> [s] ]
+part2 = S.size . (!! 6) . iterate tick . S.fromList . map (\(y,x) -> C4 0 0 y x)
+
+tick :: Space c => Set c -> Set c
+tick w = S.filter (live w) . hull $ w
+
+live :: Space c => Set c -> c -> Bool
+live w c
+  | c `S.member` w = 3 == actives || 2 == actives
+  | otherwise      = 3 == actives
   where
-    m' = M.filter (On ==) m
-    cs = hull (M.keys m')
+    actives = S.size (S.intersection w (S.fromList (neighbors c)))
 
-
-f m c On | actives == 2 || actives == 3 = On
-         | otherwise = Off
-  where actives = length (catMaybes [ m M.!? c' | c' <- neighbors c])
-f m c Off | actives == 3 = On
-          | otherwise    = Off
-  where actives = length (catMaybes [ m M.!? c' | c' <- neighbors c])
-
-hull :: [Coord] -> [Coord]
-hull cs = S.toList $ S.fromList $ cs ++ concat [ neighbors c | c <- cs ]
+hull :: Space c => Set c -> Set c
+hull cs = S.unions (cs : [ S.fromList (neighbors c) | c <- S.toList cs ])
