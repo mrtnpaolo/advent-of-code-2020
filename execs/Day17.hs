@@ -23,17 +23,17 @@ import Data.IntMap.Strict qualified as IM
 --import Data.Array.IArray qualified as A
 --import Data.Array.MArray qualified as A
 
-data Coord = C !Int !Int !Int
+data Coord = C !Int !Int !Int !Int
   deriving (Read, Show, Ord, Eq, Ix)
 
 neighbors :: Coord -> [Coord]
-neighbors c@(C z y x) =
-  c `seq` [ C (z+dz) (y+dy) (x+dx)
-          | dx <- [-1,0,1], dy <- [-1,0,1], dz <- [-1,0,1]
-          , abs dx + abs dy + abs dz > 0 ]
+neighbors c@(C w z y x) =
+  c `seq` [ C (w+dw) (z+dz) (y+dy) (x+dx)
+          | dx <- [-1,0,1], dy <- [-1,0,1], dz <- [-1,0,1], dw <- [-1,0,1]
+          , abs dx + abs dy + abs dz + abs dw > 0 ]
 
 origin :: Coord
-origin = C 0 0 0
+origin = C 0 0 0 0
 
 
 data Cube = On | Off deriving (Show,Eq)
@@ -45,7 +45,7 @@ main =
 
 parse :: String -> M.Map Coord Cube
 parse raw = M.fromList $
-  [ (C 0 y x,b) | (y,row) <- zip [0..] (lines raw)
+  [ (C 0 0 y x,b) | (y,row) <- zip [0..] (lines raw)
                 , (x,a) <- zip [0..] row
                 , let b = case a of '.' -> Off; '#' -> On ]
 
