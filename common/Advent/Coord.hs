@@ -24,3 +24,17 @@ origin = C 0 0
 
 manhattan :: Coord -> Coord -> Int
 manhattan (C x y) (C u v) = abs (x-u) + abs (y-v)
+
+showGrid :: [Coord] -> String
+showGrid g = unlines $
+  [ [ if C y x `elem` g
+      then '#'
+      else '.'
+    | x <- [xm..xM] ]
+  | y <- [ym..yM] ]
+  where
+    ys = [ y | C y _ <- g ]
+    xs = [ x | C _ x <- g ]
+
+    (ym,yM) = (minimum ys,maximum ys)
+    (xm,xM) = (minimum xs,maximum xs)

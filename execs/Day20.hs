@@ -5,11 +5,12 @@ module Main
   ) where
 
 import Advent
+import Advent.Coord
 
 import Data.Ix
 import Data.Ord
 import Data.List
-import Data.Bits
+import Data.Bits (testBit,setBit)
 import Data.Char
 import Data.Word
 import Data.Maybe
@@ -35,83 +36,65 @@ import Debug.Trace
 
 main :: IO ()
 main =
-  do i <- getInput parse 20
-     print (part1 i)
+  do tiles <- getInput parse 20
+     let sz = 3
+         pic = head $ stitch M.empty [ C y x | y <- [0..sz-1], x <- [0..sz-1] ] tiles
+         corners = map (fst . (pic M.!)) [ C 0 0, C 0 (sz-1), C (sz-1) (sz-1), C (sz-1) 0 ]
+     print (product corners)
+     --for_ [0..sz-1] $ \y ->
+     -- for_ [0..sz-1] $ \x ->
+     --   do print (fst (pic M.! C y x))
+     --      putStrLn . showGrid . S.toList . snd . (pic M.!) $ C y x
+     let image = S.fromList $ [ C (8*y + dy) (8*x + dx)
+                              | (C y x,t) <- M.assocs pic
+                              , C dy dx <- removeFrame t
+                              ]
+     for_ (d8 image) $ \i' ->
+       putStrLn . showGrid . S.toList $ i'
 
-parse = M.fromList . map (\(n,cs) -> (n,toT n cs)) . map readTile . init . splitOn "\n\n"
+
+type Tile = S.Set Coord
+
+parse :: String -> [(Int,Tile)]
+parse = map readTile . init . splitOn "\n\n"
   where
     readTile xs = (n,cs)
       where
         r x | x `elem` "Tile:" = ' ' | otherwise = x
         (header:rows) = lines xs
         [read @Int -> n] = words . map r $ header
-        cs = M.fromList @(Int,Int) $
-               [ ((y,x),c)
-               | (y,cols) <- zip [0..] rows
-               , (x,c)    <- zip [0..] cols ]
+        cs = S.fromList $ [ C y x
+                          | (y,cols) <- zip [0..] rows
+                          , (x,'#')  <- zip [0..] cols ]
 
-    toT n cs = T n (north cs) (east cs) (south cs) (west cs)
-      where
-        north cs = [ cs M.! (0,x) == '#' | x <- [0..9] ]
-        east  cs = [ cs M.! (y,9) == '#' | y <- [0..9] ]
-        south cs = [ cs M.! (9,x) == '#' | x <- [9,8..0] ]
-        west  cs = [ cs M.! (y,0) == '#' | y <- [9,8..0] ]
+type Picture = M.Map Coord (Int,Tile)
 
-data T = T
-  { _id            :: Int
-  , _n, _e, _s, _w :: [Bool]
-  } deriving (Show,Eq,Ord)
+stitch :: Picture -> [Coord] -> [(Int,Tile)] -> [Picture]
+stitch pic []     _     = [pic]
+stitch pic (c:cs) tiles =
+  do ((n,t),rest) <- select tiles
+     t' <- d8 t
+     for_ (pic M.!? above c) $ \(_,ta) ->
+       guard (sort [ x | C 9 x <- S.toList ta ] == sort [ x | C 0 x <- S.toList t' ])
+     for_ (pic M.!? left c) $ \(_,tl) ->
+       guard (sort [ y | C y 9 <- S.toList tl ] == sort [ y | C y 0 <- S.toList t' ])
+     stitch (M.insert c (n,t') pic) cs rest
 
-data D8 = R0 | R90 | R180 | R270 | H | V | D1 | D2 deriving (Show)
+d8 :: Tile -> [Tile]
+d8 t = take 4 (iterate rotate t) ++ take 4 (iterate rotate (invert t))
 
-syms T{..} =
-  [ {-( R0   ,-} T _id _n _e _s _w
-  , {-( R90  ,-} T _id _w _n _e _s
-  , {-( R180 ,-} T _id _s _w _n _e
-  , {-( R270 ,-} T _id _e _s _w _n
-  , {-( H    ,-} T _id (reverse _s) (reverse _e) (reverse _n) (reverse _w)
-  , {-( V    ,-} T _id (reverse _n) (reverse _w) (reverse _s) (reverse _e)
-  , {-( D1   ,-} T _id (reverse _w) (reverse _s) (reverse _e) (reverse _n)
-  , {-( D2   ,-} T _id (reverse _e) (reverse _n) (reverse _w) (reverse _s)
-  ]
-
-clockwise T{..} = [_n,_e,_s,_w]
-
-part1 tiles = product corners
+rotate :: Tile -> Tile
+rotate t = t2
   where
-    t = tiles M.! 2311
+    t1 = S.map (\(C y x) -> C x (-y)) t
+    xm = abs $ minimum [ x | C _ x <- S.toList t1 ]
+    t2 = S.map (\(C y x) -> C y (x+xm)) t1
 
-    allsides = S.fromList . map fromBits . concatMap clockwise . concatMap syms $ tiles
+invert t = t2
+  where
+    t1 = S.map (\(C y x) -> C (-y) x) t
+    ym = maximum [ abs y | C y _ <- S.toList t1 ]
+    t2 = S.map (\(C y x) -> C (y+ym) x) t1
 
-    tilesBySide = M.fromList [ (side,tilesWith side) | side <- S.toList allsides ]
-
-    tilesWith side =
-      [ _id t
-      | t <- M.elems tiles
-      , side `elem` [ fromBits bs | bs <- concatMap clockwise (syms t) ]
-      ]
-
-    corners =
-      [ _id t | t <- M.elems tiles
-      , (2==) $ count id
-          [ [_id t] == tilesBySide M.! fromBits side | side <- clockwise t ] ]
-
-
-
-
-
-
-
-{-
-
-perimeter n cs = T n (north cs) (east cs) (south cs) (west cs)
-
-toN :: [Int] -> Word64
-toN = foldl' setBit 0
--}
-toBits :: Int -> Word64 -> [Bool]
-toBits size n = [ testBit n i | i <- [0..size-1] ]
-
-fromBits :: [Bool] -> Word64
-fromBits bits = foldl' setBit 0 (findIndices id bits)
-
+removeFrame (_,p) =
+  [ C (y-1) (x-1) | C y x <- S.toList p, 0 < y, y < 9, 0 < x, x < 9 ]
