@@ -37,7 +37,7 @@ import Debug.Trace
 main :: IO ()
 main =
   do tiles <- getInput parse 20
-     let sz = 3
+     let sz = 12
          pic = head $ stitch M.empty [ C y x | y <- [0..sz-1], x <- [0..sz-1] ] tiles
          corners = map (fst . (pic M.!)) [ C 0 0, C 0 (sz-1), C (sz-1) (sz-1), C (sz-1) 0 ]
      print (product corners)
@@ -49,9 +49,19 @@ main =
                               | (C y x,t) <- M.assocs pic
                               , C dy dx <- removeFrame t
                               ]
-     for_ (d8 image) $ \i' ->
-       putStrLn . showGrid . S.toList $ i'
-
+     --for_ (d8 image) $ \i' ->
+     --  putStrLn . showGrid . S.toList $ i'
+     let nessie = S.fromList . readGrid . unlines $
+                    ["                  # "
+                    ,"#    ##    ##    ###"
+                    ," #  #  #  #  #  #   "]
+     let without = foldl' elide image
+                     [ S.map (translate dx dy) cs
+                     | dx <- [0..8*sz]
+                     , dy <- [0..8*sz]
+                     , cs <- d8 nessie
+                     ]
+     print (S.size without)
 
 type Tile = S.Set Coord
 
@@ -63,9 +73,7 @@ parse = map readTile . init . splitOn "\n\n"
         r x | x `elem` "Tile:" = ' ' | otherwise = x
         (header:rows) = lines xs
         [read @Int -> n] = words . map r $ header
-        cs = S.fromList $ [ C y x
-                          | (y,cols) <- zip [0..] rows
-                          , (x,'#')  <- zip [0..] cols ]
+        cs = S.fromList (readGrid (unlines rows))
 
 type Picture = M.Map Coord (Int,Tile)
 
@@ -98,3 +106,11 @@ invert t = t2
 
 removeFrame (_,p) =
   [ C (y-1) (x-1) | C y x <- S.toList p, 0 < y, y < 9, 0 < x, x < 9 ]
+
+translate :: Int -> Int -> Coord -> Coord
+translate dy dx (C y x) = C (y + dy) (x + dx)
+
+elide :: S.Set Coord -> S.Set Coord -> S.Set Coord
+elide src offending
+  | offending `S.isSubsetOf` src = src `S.difference` offending
+  | otherwise                    = src

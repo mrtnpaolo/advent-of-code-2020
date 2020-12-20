@@ -38,3 +38,8 @@ showGrid g = unlines $
 
     (ym,yM) = (minimum ys,maximum ys)
     (xm,xM) = (minimum xs,maximum xs)
+
+readGrid :: String -> [Coord]
+readGrid raw =
+  [ C y x | (y,rows) <- zip [0..] (lines raw)
+          , (x,'#' ) <- zip [0..] rows ]
