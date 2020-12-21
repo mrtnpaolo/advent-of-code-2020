@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unused-imports -Wno-unused-top-binds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 module Main
   ( main
   ) where
@@ -7,63 +5,40 @@ module Main
 import Advent
 import Advent.Coord
 
-import Data.Ix
-import Data.Ord
-import Data.List
-import Data.Bits (testBit,setBit)
-import Data.Char
-import Data.Word
-import Data.Maybe
-import Data.Foldable
-import Data.Traversable
-
-import Control.Monad
-import Control.Applicative
+import Data.List       (foldl',sort)
+import Data.Foldable   (for_)
+import Data.List.Split (splitOn)
+import Control.Monad   (guard)
 
 import Data.Set           qualified as  S
-import Data.IntSet        qualified as IS
 import Data.Map.Strict    qualified as  M
-import Data.IntMap.Strict qualified as IM
-
-import Data.Array.IArray  qualified as  A
-
-import Data.List.Split
-
-import Debug.Trace
-
---import Text.Regex.Base
---import Text.Regex.TDFA
 
 main :: IO ()
 main =
   do tiles <- getInput parse 20
-     let sz = 12
-         pic = head $ stitch M.empty [ C y x | y <- [0..sz-1], x <- [0..sz-1] ] tiles
-         corners = map (fst . (pic M.!)) [ C 0 0, C 0 (sz-1), C (sz-1) (sz-1), C (sz-1) 0 ]
+
+     let sz      = 12
+         pic     = stitch [ C y x | y <- [0..sz-1], x <- [0..sz-1] ] tiles
+         corners = [ fst (pic M.! C y x) | y <- [0,sz-1], x <- [0,sz-1] ]
+
      print (product corners)
-     --for_ [0..sz-1] $ \y ->
-     -- for_ [0..sz-1] $ \x ->
-     --   do print (fst (pic M.! C y x))
-     --      putStrLn . showGrid . S.toList . snd . (pic M.!) $ C y x
-     let image = S.fromList $ [ C (8*y + dy) (8*x + dx)
-                              | (C y x,t) <- M.assocs pic
-                              , C dy dx <- removeFrame t
-                              ]
-     --for_ (d8 image) $ \i' ->
-     --  putStrLn . showGrid . S.toList $ i'
-     let nessie = S.fromList . readGrid . unlines $
-                    ["                  # "
-                    ,"#    ##    ##    ###"
-                    ," #  #  #  #  #  #   "]
-     let without = foldl' elide image
-                     [ S.map (translate dx dy) cs
-                     | dx <- [0..8*sz]
-                     , dy <- [0..8*sz]
-                     , cs <- d8 nessie
-                     ]
+
+     let image = S.fromList [ C (8*y + dy) (8*x + dx)
+                            | (C y x,t) <- M.assocs pic
+                            , C dy dx <- removeFrame t ]
+
+     let nessie = readGrid $ unlines [ "                  # "
+                                     , "#    ##    ##    ###"
+                                     , " #  #  #  #  #  #   " ]
+
+     let without = foldl' elide image [ map (translate dx dy) cs
+                                      | dx <- [0..8*sz]
+                                      , dy <- [0..8*sz]
+                                      , cs <- d8 nessie ]
+
      print (S.size without)
 
-type Tile = S.Set Coord
+type Tile = [Coord]
 
 parse :: String -> [(Int,Tile)]
 parse = map readTile . init . splitOn "\n\n"
@@ -73,20 +48,22 @@ parse = map readTile . init . splitOn "\n\n"
         r x | x `elem` "Tile:" = ' ' | otherwise = x
         (header:rows) = lines xs
         [read @Int -> n] = words . map r $ header
-        cs = S.fromList (readGrid (unlines rows))
+        cs = readGrid (unlines rows)
 
 type Picture = M.Map Coord (Int,Tile)
 
-stitch :: Picture -> [Coord] -> [(Int,Tile)] -> [Picture]
-stitch pic []     _     = [pic]
-stitch pic (c:cs) tiles =
-  do ((n,t),rest) <- select tiles
-     t' <- d8 t
-     for_ (pic M.!? above c) $ \(_,ta) ->
-       guard (sort [ x | C 9 x <- S.toList ta ] == sort [ x | C 0 x <- S.toList t' ])
-     for_ (pic M.!? left c) $ \(_,tl) ->
-       guard (sort [ y | C y 9 <- S.toList tl ] == sort [ y | C y 0 <- S.toList t' ])
-     stitch (M.insert c (n,t') pic) cs rest
+stitch :: [Coord] -> [(Int,Tile)] -> Picture
+stitch cs tiles = head (go M.empty cs tiles)
+  where
+    go pic [] _ = [pic]
+    go pic (c:cs) tiles =
+      do ((n,t),rest) <- select tiles
+         t' <- d8 t
+         for_ (pic M.!? above c) $ \(_,ta) ->
+           guard (sort [ x | C 9 x <- ta ] == sort [ x | C 0 x <- t' ])
+         for_ (pic M.!? left c) $ \(_,tl) ->
+           guard (sort [ y | C y 9 <- tl ] == sort [ y | C y 0 <- t' ])
+         go (M.insert c (n,t') pic) cs rest
 
 d8 :: Tile -> [Tile]
 d8 t = take 4 (iterate rotate t) ++ take 4 (iterate rotate (invert t))
@@ -94,23 +71,23 @@ d8 t = take 4 (iterate rotate t) ++ take 4 (iterate rotate (invert t))
 rotate :: Tile -> Tile
 rotate t = t2
   where
-    t1 = S.map (\(C y x) -> C x (-y)) t
-    xm = abs $ minimum [ x | C _ x <- S.toList t1 ]
-    t2 = S.map (\(C y x) -> C y (x+xm)) t1
+    t1 = map (\(C y x) -> C x (-y)) t
+    xm = abs $ minimum [ x | C _ x <- t1 ]
+    t2 = map (\(C y x) -> C y (x+xm)) t1
 
 invert t = t2
   where
-    t1 = S.map (\(C y x) -> C (-y) x) t
-    ym = maximum [ abs y | C y _ <- S.toList t1 ]
-    t2 = S.map (\(C y x) -> C (y+ym) x) t1
+    t1 = map (\(C y x) -> C (-y) x) t
+    ym = maximum [ abs y | C y _ <- t1 ]
+    t2 = map (\(C y x) -> C (y+ym) x) t1
 
 removeFrame (_,p) =
-  [ C (y-1) (x-1) | C y x <- S.toList p, 0 < y, y < 9, 0 < x, x < 9 ]
+  [ C (y-1) (x-1) | C y x <- p, 0 < y, y < 9, 0 < x, x < 9 ]
 
 translate :: Int -> Int -> Coord -> Coord
 translate dy dx (C y x) = C (y + dy) (x + dx)
 
-elide :: S.Set Coord -> S.Set Coord -> S.Set Coord
-elide src offending
+elide :: S.Set Coord -> [Coord] -> S.Set Coord
+elide src (S.fromList -> offending)
   | offending `S.isSubsetOf` src = src `S.difference` offending
   | otherwise                    = src
