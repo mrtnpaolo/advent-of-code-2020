@@ -54,4 +54,4 @@ rcombat (seen,players)
     (x :<| xs,y :<| ys) = players
     seen' = Set.insert players seen
     recursive = snd $
-      until (finished . snd) rcombat (seen,(Seq.take x xs,Seq.take y ys))
+      until (finished . snd) rcombat (Set.empty,(Seq.take x xs,Seq.take y ys))
