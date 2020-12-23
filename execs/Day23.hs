@@ -37,10 +37,8 @@ import Data.Hashable
 
 main :: IO ()
 main =
-  do --print (part1 9 start)
-     print (part2 1_000_000 start)
-
---parse = id
+  do print (part1 9 start)
+     --print (part2 1_000_000 start)
 
 type Cups = Seq Int
 
@@ -53,23 +51,14 @@ cw n s = Seq.drop n $ Seq.cycleTaking (length s + n) s
 
 part1 m = f . (!! 100) . iterate (tick m)
 
-tick m (curr :<| a :<| b :<| c :<| rest) = {-traceShow (l,r) -}{- traceShowId -} rotated -- curr :<| rest
+tick m (curr :<| a :<| b :<| c :<| rest) = rotated
   where
     picked =  S.fromList [a,b,c]
     remain = curr :<| rest
     [next] = take 1 . filter (`S.notMember` picked) . tail . iterate (pred' m) $ curr
-
     (left,_ :<| right) = Seq.spanl (next /=) remain
     new = left >< (next <| a <| b <| c <| right)
-
-    --Just i = {-traceShowId $-} Seq.findIndexL (next ==) remain
-    --(left,right) = Seq.splitAt (i+1) remain
-    --new = traceShow ("curr",curr,"picked",[a,b,c],"i",i,"l",left,"r",right) $
-    --new = left >< (a <| b <| c <| right)
-
     rotated = cw 1 new
-    --oneAt = Seq.findIndexL (1==) rotated
-    (Seq.take 3 -> l,Seq.take 3 -> r) = Seq.spanl (1 /=) rotated
 tick _ _ = undefined
 
 pred' m x = let y = pred x in y `seq` if y == 0 then m else y
