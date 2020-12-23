@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Main
   ( main
   ) where
@@ -33,12 +34,16 @@ import Debug.Trace
 --import Text.Regex.Base
 --import Text.Regex.TDFA
 
-import Data.Hashable
+import Control.Monad.ST qualified as ST
+import Data.Array.ST qualified as ST
+import Data.Array.Unboxed qualified as U
+import Data.Array.MArray qualified as M
+import Data.Array.IArray qualified as A
 
 main :: IO ()
 main =
   do print (part1 9 start)
-     --print (part2 1_000_000 start)
+     print (part2 1_000_000 (toList start))
 
 type Cups = Seq Int
 
@@ -55,7 +60,8 @@ tick m (curr :<| a :<| b :<| c :<| rest) = rotated
   where
     picked =  S.fromList [a,b,c]
     remain = curr :<| rest
-    [next] = take 1 . filter (`S.notMember` picked) . tail . iterate (pred' m) $ curr
+    --[next] = take 1 . filter (`S.notMember` picked) . tail . iterate (pred' m) $ curr
+    next = until (\n -> n/=a&&n/=b&&n/=c) (pred' m) (pred' m curr)
     (left,_ :<| right) = Seq.spanl (next /=) remain
     new = left >< (next <| a <| b <| c <| right)
     rotated = cw 1 new
@@ -67,13 +73,38 @@ f s = r <> l
   where
     (l,1 :<| r) = Seq.spanl (1 /=) s
 
-part2 m s = go 0 IS.empty (s >< Seq.fromList [10..1_000_000])
+--part2 :: Int -> [Int] -> Int
+part2 m s = (a A.! 1) * (a A.! (a A.! 1))
+-- zipWith (A.!) (repeat a) ([1..12] ++ [999_997,999_998,999_999,1_000_000])
   where
-    go i seen s
-      | IS.member h seen
-      , let (l,r) = Seq.spanl (1 /=) s
-      = (i,Seq.take 3 l, Seq.take 3 r)
-      | otherwise = go (i+1) (IS.insert h seen) (tick m s)
-      where
-        h = hash (toList s)
+    a :: U.UArray Int Int = ST.runSTUArray $
+          do arr <- M.newListArray (1,m) (map snd cups) :: ST.ST s (ST.STUArray s Int Int)
+             go 1 arr (head s)
+    (lastcup,firstcup) : (reverse -> restcups) = reverse $ zip s (tail (cycle s))
+    extra = succ (maximum s)
+    cups = sort ((lastcup,extra) : restcups) ++
+             zip [extra .. pred m] (map succ [extra .. pred m]) ++
+               [(m,firstcup)]
 
+    go :: forall s. Int -> ST.STUArray s Int Int -> Int -> ST.ST s (ST.STUArray s Int Int)
+    go 10_000_000 arr _ = pure arr :: ST.ST s (ST.STUArray s Int Int)
+    --go 10 arr _ = pure arr :: ST.ST s (ST.STUArray s Int Int)
+    go i arr curr =
+      do -- pick up cups a,b,c and tie curr to d to re-make the circle
+         -- curr,a,b,c,d -> curr,d
+         a <- M.readArray arr curr
+         b <- M.readArray arr a
+         c <- M.readArray arr b
+         d <- M.readArray arr c
+         M.writeArray arr curr d
+         -- calc the destination
+         let dest = until (\n -> n/=a&&n/=b&&n/=c) (pred' m) (pred' m curr)
+         -- find dest,x and plop a,b,c into them: dest,a,b,c,x
+         x <- M.readArray arr dest
+         M.writeArray arr dest a
+         M.writeArray arr c x
+         -- find the next current cup
+         next <- M.readArray arr curr
+         when (i `mod` 1_000_000 == 0) $
+            traceM (show (i,curr,next))
+         go (succ i) arr next
