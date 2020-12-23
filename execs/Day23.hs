@@ -5,7 +5,7 @@ module Main
 
 import Advent
 
-import Data.Char     (isDigit)
+import Data.Char     (digitToInt)
 import Data.List     (sort)
 import Data.Foldable (toList)
 
@@ -23,7 +23,7 @@ main =
      putStrLn (part1 9 i)
      print (part2 1_000_000 (toList i))
 
-parse xs = Seq.fromList [ read @Int [x] | x <- xs, isDigit x ]
+parse xs = Seq.fromList [ digitToInt x | x <- init xs ]
 
 -- clockwise rotation by n
 cw n s = Seq.drop n $ Seq.cycleTaking (length s + n) s
@@ -53,10 +53,10 @@ part2 m s = (a A.! 1) * (a A.! (a A.! 1))
                              go 1 arr (head s)
 
     extra = succ (maximum s)
-    (lastcup,firstcup) : (reverse -> restcups) = reverse $ zip s (tail (cycle s))
-    cups = sort ((lastcup,extra) : restcups) ++
-             zip [extra .. pred m] (map succ [extra .. pred m]) ++
-               [(m,firstcup)]
+    extras = [extra .. pred m]
+    (lastcup,firstcup) : restcups = reverse $ zip s (tail (cycle s))
+
+    cups = sort ((lastcup,extra) : restcups) ++ zip extras (map succ extras) ++ [(m,firstcup)]
 
     go :: forall s. Int -> ST.STUArray s Int Int -> Int -> ST s (ST.STUArray s Int Int)
     go 10_000_000 arr _ = pure arr
