@@ -212,13 +212,13 @@ executable Day22
     default-language:   Haskell2010
     default-extensions: ImportQualifiedPost, TypeApplications, TupleSections
 
--- executable Day23
---     main-is:            Day23.hs
---     build-depends:      base,
---                         advent-of-code2020, array, containers, split
---     hs-source-dirs:     execs
---     default-language:   Haskell2010
---     default-extensions: ImportQualifiedPost, NumericUnderscores, TypeApplications, ViewPatterns, RecordWildCards, ParallelListComp
+executable Day23
+    main-is:            Day23.hs
+    build-depends:      base,
+                        advent-of-code2020, array, containers, split, hashable
+    hs-source-dirs:     execs
+    default-language:   Haskell2010
+    default-extensions: ImportQualifiedPost, NumericUnderscores, TypeApplications, ViewPatterns, RecordWildCards, ParallelListComp, TupleSections
 
 -- executable Day24
 --     main-is:            Day24.hs
