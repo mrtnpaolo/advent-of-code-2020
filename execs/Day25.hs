@@ -8,14 +8,12 @@ import Data.List (findIndex)
 main :: IO ()
 main =
   do i <- getInput parse 25
-     --let i = (5764801,17807724)
      print (part1 i)
 
-parse = (\[cpk,dpk] -> (cpk,dpk)) . map (read @Int) . lines
+parse = map (read @Int) . lines
 
-part1 (cpk,dpk) = (transform cls dpk,transform dls cpk)
-  where
-    (Just cls,Just dls) = (loopsize cpk,loopsize dpk)
+part1 [cpk,dpk] = transform cls dpk where Just cls = loopsize cpk
+            -- or transform dls cpk where Just dls = loopsize dpk
 
 loopsize n = findIndex (n==) (iterate (\x -> x * 7 `mod` 20201227) 1)
 
